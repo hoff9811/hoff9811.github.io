@@ -1,7 +1,7 @@
 Scorecard Validation
 ================
 
-## Scorecard Validation
+## Introduction
 
 The purpose of this project is to monitor and test the ongoing
 performance of a client’s credit risk rating scorecards. The Bank’s risk
@@ -142,7 +142,7 @@ each of the Bank’s portfolio-models:
 Our data shows the fluid nature of the Bank’s portfolio - each month,
 new accounts are added and old account roll off the books. Because of
 this dynamic, it’s important to control for portfolio changes over time
-when evaluating model performance. A commonly used techinque to account
+when evaluating model performance. A commonly used technique to account
 for this is what’s called a *closed-end analysis*:
 
 -   At t= 0, a starting list of accounts is defined. In this analysis,
@@ -157,8 +157,11 @@ for this is what’s called a *closed-end analysis*:
     ![count(Defaults) / count(Total)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;count%28Defaults%29%20%2F%20count%28Total%29 "count(Defaults) / count(Total)")
     .
 
--   Since we have data spanning, 2018-2021, we can calculate default
-    rates for 4 years
+Since the Bank provided us data spanning, 2018-2022, we calculated
+default rates for 4 years. Our closed end analysis picks a 6/30 annual
+snapshot as our starting list, and then I track whether any of those
+accounts default over the next 12 months. Each year’s healthy snapshot
+date and default measurement window is outlined below:
 
 | Year | Healthy Snapshot Date | Default Measurement Window |
 |------|-----------------------|----------------------------|
@@ -167,15 +170,45 @@ for this is what’s called a *closed-end analysis*:
 | 2021 | 2020-06-30            | 2020-07-31 to 2021-06-30   |
 | 2022 | 2021-06-30            | 2021-07-31 to 2022-06-30   |
 
-I performed this closed end analysis for each risk rating scorecard,
-yielding the below annual, observed default rates.
+Across the four years, we compared the number of defaults to the number
+of healthy observations, yielding the annual observed default rate by
+scorecard.
 
-    ## `summarise()` has grouped output by 'portfolio'. You can override using the
-    ## `.groups` argument.
+Overall, the default rate for the commercial scorecards (C&I and CRE)
+were relatively low, while the consumer oriented models (Consumer and
+Small Business) had higher observed default rates over the measurement
+period.
+
+| Portfolio      | Year | Healthy Count | Default Count | Default Rate (%) |
+|----------------|------|---------------|---------------|------------------|
+| C&I            | 2019 | 1,946         | 1             | 0.05%            |
+| C&I            | 2020 | 1,543         | 17            | 1.12%            |
+| C&I            | 2021 | 1,436         | 6             | 0.42%            |
+| C&I            | 2022 | 1,264         | 5             | 0.40%            |
+| CRE            | 2019 | 653           | 1             | 0.155            |
+| CRE            | 2020 | 714           | 11            | 1.54%            |
+| CRE            | 2021 | 555           | 5             | 0.90%            |
+| CRE            | 2022 | 427           | 1             | 0.23%            |
+| Small Business | 2020 | 6,417         | 116           | 1.81%            |
+| Small Business | 2021 | 10,350        | 109           | 1.05%            |
+| Small Business | 2022 | 6,849         | 128           | 1.87%            |
+| Consumer       | 2020 | 19,650        | 265           | 1.35%            |
+| Consumer       | 2021 | 17,647        | 123           | 0.70%            |
+| Consumer       | 2022 | 15,434        | 103           | 0.67%            |
+
+Tracking the default rates over time, it is clear that the Bank as a
+whole saw an uptick in defaults during the 2020 observation. That data
+point measures defaults spanning July 2020 - June 2021, which coincides
+with the COVID-19 pandemic, thus the elevated default rates is an
+expected result.
 
 ![](github-project_files/figure-gfm/default_rate-1.png)<!-- -->
 
-The default rates are as follows for each scorecard:
+The annual default rates are useful in other scorecard related excerises
+such as probability of default (PD) calibration, but the scope of this
+project is scorecard validation and testing. As such, the default data
+can be thought of as the data set on which we will test the scorecard’s
+accuracy.
 
 ## Scorecard Validation
 
@@ -191,9 +224,6 @@ spanning 1-10. Most accounts receive a rating between 4-8.
 
 We define model performance based on the classification power the model
 has in assigning defaulted borrowers as high risk customers.
-
-    ## `summarise()` has grouped output by 'portfolio', 'year'. You can override using
-    ## the `.groups` argument.
 
 ![](github-project_files/figure-gfm/default_rate_by_rating-1.png)<!-- -->
 
