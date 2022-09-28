@@ -4,7 +4,7 @@
 
 ### Category Name 1 
 
-[Risk Rating Validation](/github-project)
+[Risk Rating Validation](/github-project.md)
 <img src="images/dummy_thumbnail.jpg?raw=true"/>
 
 ---
