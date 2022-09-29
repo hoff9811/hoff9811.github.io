@@ -33,46 +33,17 @@ the Bank insight into the efficacy of their model.
 The monthly snapshots contain all loans spanning 2014-2022:
 
 ``` r
-cade_2014to2022 %>% count(portfolio_date)
+cade_2014to2022 %>% 
+  count(portfolio_date) %>% 
+  ggplot(aes(x = portfolio_date, y = n))+
+  geom_point(stat = "identity")+
+  geom_area(fill = "grey70")+
+  theme_bw()+
+  xlab("Snapshot Date")+
+  ylab("Count")
 ```
 
-    ##    portfolio_date     n
-    ## 1      2014-12-31 20692
-    ## 2      2015-03-31 19986
-    ## 3      2015-06-30 19138
-    ## 4      2015-09-30 19113
-    ## 5      2015-12-31 18516
-    ## 6      2016-03-31 18193
-    ## 7      2016-06-30 17887
-    ## 8      2016-09-30 17881
-    ## 9      2016-12-31 17743
-    ## 10     2017-03-31 17502
-    ## 11     2017-06-30 17286
-    ## 12     2017-09-30 17637
-    ## 13     2017-12-31 17784
-    ## 14     2018-03-31 17664
-    ## 15     2018-06-30 18008
-    ## 16     2018-09-30 19159
-    ## 17     2018-12-31 19913
-    ## 18     2019-03-31 30240
-    ## 19     2019-06-30 28534
-    ## 20     2019-09-30 28583
-    ## 21     2019-12-31 28097
-    ## 22     2020-03-31 27562
-    ## 23     2020-06-30 30727
-    ## 24     2020-09-30 30485
-    ## 25     2020-12-31 29617
-    ## 26     2021-03-31 28422
-    ## 27     2021-06-30 24799
-    ## 28     2021-09-30 24059
-    ## 29     2021-11-30 23526
-    ## 30     2021-12-31 22346
-    ## 31     2022-01-31 22168
-    ## 32     2022-02-28 22014
-    ## 33     2022-03-31 21823
-    ## 34     2022-04-30 21593
-    ## 35     2022-05-31 21413
-    ## 36     2022-06-30 21315
+![](github-project_files/figure-gfm/portfolio_date-1.png)<!-- -->
 
 The data contains the following fields
 
@@ -119,16 +90,18 @@ cade_2014to2022 %>%
   select(facility_id, 
          portfolio_date,
          Accural_Status.Non.Accrual., 
+         pd,
          Past_Due_in_Days,
          scorecard) %>% 
   glimpse()
 ```
 
     ## Rows: 801,425
-    ## Columns: 5
+    ## Columns: 6
     ## $ facility_id                 <chr> "1000539310", "1000539351", "1000539369", ~
     ## $ portfolio_date              <date> 2014-12-31, 2014-12-31, 2014-12-31, 2014-~
     ## $ Accural_Status.Non.Accrual. <chr> "Accruing", "Accruing", "Accruing", "Accru~
+    ## $ pd                          <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~
     ## $ Past_Due_in_Days            <dbl> 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0,~
     ## $ scorecard                   <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~
 
@@ -255,3 +228,5 @@ two levels of granularity:
     observations across all years)
 
 Certain portfolios may be affected
+
+![](github-project_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
