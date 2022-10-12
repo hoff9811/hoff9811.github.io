@@ -1,8 +1,6 @@
 Scorecard Validation
 ================
 
-## Introduction
-
 The purpose of this project is to monitor and test the ongoing
 performance of a client’s credit risk rating scorecards. The Bank’s risk
 rating scorecards have been in place for over ten years, and the Bank
