@@ -4,7 +4,7 @@
 
 ### Category Name 1 
 
-[Risk Rating Validation](/github-project.md)
+[Risk Rating Validation](/github_project.md)
 <img src="images/gini_matrix.jpg?raw=true"/>
 
 ---
