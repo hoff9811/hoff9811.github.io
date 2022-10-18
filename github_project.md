@@ -11,7 +11,7 @@ whether the scorecards are still predictive on today’s loan borrowers.
 
 Generally speaking, model performance for a credit risk scorecard
 translates to: **does the scorecard correctly classify borrowers who
-default on their loan as high risk prior to the default date?**
+default on their loan as high risk prior to their default date?**
 
 To accomplish this goal, there are a couple of questions we have to
 answer as we analyze the risk rating data:
