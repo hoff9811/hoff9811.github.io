@@ -5,7 +5,7 @@
 ### Category Name 1 
 
 [Risk Rating Validation](/github_project.md)
-<img src="images/gini_matrix.jpg?raw=true"/>
+<img src="images/gini_matrix.png?raw=true"/>
 
 ---
 [Project 2 Title](/pdf/sample_presentation.pdf)
