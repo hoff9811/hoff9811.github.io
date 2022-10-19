@@ -438,7 +438,7 @@ Takeaways:
 
 ## Model Fitting
 
-We are going to fit three different model types to fit our dependent
+We are going to fit two different model types to fit our dependent
 variable, *attendance\_pct*.
 
 -   Linear Regression
@@ -471,8 +471,7 @@ the following steps:
 4.  Limit inter-variable correlation to 0.7 to reduce collinearity in
     the model
 
-Steps 1:3 will be applied to all models (Linear, Random Forest,
-XGBoost). We don’t need interaction terms in the tree-based models (RF),
+Steps 1:3 will be applied to all models (Linear, Random Forest). We don’t need interaction terms in the tree-based models (RF),
 so we have a separate set of pre-processing steps for those models.
 
     # Set up the recipe 
