@@ -9,5 +9,8 @@
 
 ---
 
+
+[Random Forest vs. Linear Regression Case Study](/notebook.md)
+<img src="images/case_study.png?raw=true"/>
 ---
 
