@@ -5,7 +5,7 @@
 
 
 [Simulated-based Risk Rating Scorecard](https://hoff9811.shinyapps.io/CST_Scorecard/)
-<img src="images/CST_scorecard.png?raw=true"/>
+<img src="images/CST_scorecard.png?raw=true" width="48">
 
 
 ### Exploratory Data Analysis
