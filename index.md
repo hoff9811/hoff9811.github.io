@@ -1,6 +1,12 @@
 ## Portfolio
 
 ---
+### Shiny Application
+
+
+[Simulated-based Risk Rating Scorecard](https://hoff9811.shinyapps.io/CST_Scorecard/)
+<img src="images/CST_scorecard.png?raw=true"/>
+
 
 ### Exploratory Data Analysis
 
