@@ -25,8 +25,8 @@ accessed here: `"data/fitness_class.csv"`
 
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 75%" />
+<col style="width: 22%" />
+<col style="width: 77%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -83,77 +83,394 @@ joining the club more than 6 months.</td>
 </tbody>
 </table>
 
-# Data Scientist Case Study Submissi
+# Data Scientist Case Study Submission
 
-    # Data Validation
-    # Check all variables in the data against the criteria in the dataset above
-
-    # Start coding here... 
-    library(tidyverse)
-    library(tidymodels)
-    library(ranger)
-    library(corrr)
-    library(vip)
-    #install.packages("ranger")
-    #install.packages("corrr")
-    #install.packages("vip")
-
-
-    df <- read_csv("data/fitness_class.csv")
-    glimpse(df)
-
-    ## Rows: 765
-    ## Columns: 9
-    ## $ day_of_week    <chr> "Wed", "Sun", "Mon", "Sun", "Mon", "Tue", "Tue", "Sun",…
-    ## $ time           <chr> "AM", "PM", "AM", "PM", "AM", "PM", "AM", "PM", "PM", "…
-    ## $ class_category <chr> "Yoga", "Aqua", "Aqua", "Strength", "Yoga", "HIIT", "Aq…
-    ## $ class_capacity <dbl> 15, 15, 15, 25, 15, 15, 25, 15, 25, 15, 15, 15, 15, 15,…
-    ## $ days_before    <dbl> 1, 3, 5, 3, 5, 4, 2, 1, 2, 3, 2, 1, 2, 2, 2, 4, 3, 2, 5…
-    ## $ attendance     <dbl> 8, 8, 10, 18, 10, 7, 15, 8, 20, 5, 12, 12, 9, 12, 6, 8,…
-    ## $ age            <dbl> 31.1, 27.0, 22.4, 23.5, 29.8, 28.7, 32.5, 36.0, 15.3, 3…
-    ## $ new_students   <dbl> 6, 7, 8, 7, 5, 4, 5, 5, 8, 4, 6, 5, 6, 6, 5, 4, 6, 7, 7…
-    ## $ over_6_month   <dbl> 4, 8, 7, 9, 7, 7, 9, 7, 11, 6, 9, 8, 7, 7, 5, 8, 6, 6, …
+Use this template to complete your analysis and write up your summary
+for submission.
 
 ## Data Validation
 
-First we look at data granularity. Each row represents a class, and each
-column represents an attribute of that class. For each class, we have
-the following variables:
+To understand how best to approach the problem presented to us in the
+case brief. we will start by evaluating the data quality and consistency
+of our data. Our data validation process can be categorized into two
+sections:
 
--   **day\_of\_week & time**: two generic time variable. I will look to
-    re-encode both to a more typical form.
--   **class\_category**: I think its fine as is. No transformations
-    needed.
--   **class\_capacity**: we can use this variable on its own and with
-    attendence
--   **days\_before**: Fine as is. No transformations needed.
--   **attendence**: Will look to take the difference between attendence
-    and class\_capacity: both as a number and as a percent.
--   **age**: Fine as is. No transformations
--   **new\_students**: Will look to convert this to a percent. Thinking
-    % of new students in class.
--   **over\_6\_months**: Will also look to convert this as a percent.
-    Also, we will need to control for overlap between this factor and
-    new\_students
+1.  Data Cleaning & Review
+2.  Data Transformations
 
-<!-- -->
+The output from the two data validation steps will be cleaned and
+processed data frame that is ready for use in model development.
+
+### Data Cleaning & Review
+
+In the first step of our data validation process, we will:
+
+-   Check for NAs
+
+-   Confirm the issues in our data as stated in the brief:
+
+    1.  Class Capacity should only equal 15 or 25
+
+    2.  Classes with average age &lt; 14 (which should not be possible
+        given the age limit on group classes)
+
+    3.  The maximum value of Days Before should equal 5
+
+We will use the skim function from the skimr package to review the
+provided dataset:
+
+    print(skimr::skim(df))
+
+    ## ── Data Summary ────────────────────────
+    ##                            Values
+    ## Name                       df    
+    ## Number of rows             765   
+    ## Number of columns          9     
+    ## _______________________          
+    ## Column type frequency:           
+    ##   character                3     
+    ##   numeric                  6     
+    ## ________________________         
+    ## Group variables            None  
+    ## 
+    ## ── Variable type: character ────────────────────────────────────────────────────
+    ##   skim_variable  n_missing complete_rate min max empty n_unique whitespace
+    ## 1 day_of_week            0             1   3   3     0        7          0
+    ## 2 time                   0             1   2   2     0        2          0
+    ## 3 class_category         0             1   4   8     0        5          0
+    ## 
+    ## ── Variable type: numeric ──────────────────────────────────────────────────────
+    ##   skim_variable  n_missing complete_rate  mean   sd   p0  p25 p50  p75 p100
+    ## 1 class_capacity         0             1 17.5  4.37 15   15    15 25   26  
+    ## 2 days_before            0             1  2.55 1.36  1    1     2  4    5  
+    ## 3 attendance             0             1  9.56 3.90  4    7     9 11   21  
+    ## 4 age                    0             1 29.1  5.91  8.3 25.3  29 33.2 48.8
+    ## 5 new_students           0             1  5.92 1.79  1    5     6  7   11  
+    ## 6 over_6_month           0             1  7.58 1.97  2    6     8  9   13  
+    ##   hist 
+    ## 1 ▇▁▁▁▃
+    ## 2 ▇▅▅▅▂
+    ## 3 ▇▇▆▁▂
+    ## 4 ▁▃▇▃▁
+    ## 5 ▂▆▇▃▁
+    ## 6 ▁▅▇▅▂
+
+    ## $character
+    ## 
+    ## ── Variable type: character ────────────────────────────────────────────────────
+    ##   skim_variable  n_missing complete_rate min max empty n_unique whitespace
+    ## 1 day_of_week            0             1   3   3     0        7          0
+    ## 2 time                   0             1   2   2     0        2          0
+    ## 3 class_category         0             1   4   8     0        5          0
+    ## 
+    ## $numeric
+    ## 
+    ## ── Variable type: numeric ──────────────────────────────────────────────────────
+    ##   skim_variable  n_missing complete_rate  mean   sd   p0  p25 p50  p75 p100 hist
+    ## 1 class_capacity         0             1 17.5  4.37 15   15    15 25   26   ▇▁▁…
+    ## 2 days_before            0             1  2.55 1.36  1    1     2  4    5   ▇▅▅…
+    ## 3 attendance             0             1  9.56 3.90  4    7     9 11   21   ▇▇▆…
+    ## 4 age                    0             1 29.1  5.91  8.3 25.3  29 33.2 48.8 ▁▃▇…
+    ## 5 new_students           0             1  5.92 1.79  1    5     6  7   11   ▂▆▇…
+    ## 6 over_6_month           0             1  7.58 1.97  2    6     8  9   13   ▁▅▇…
+
+#### Data Cleaning & Review: Results
+
+Using the skimr package, we review the values in each column. We are
+looking at the distribution of values across each column, looking for
+outliers and / or missing values. Reading through the results, the
+column by column takeaways are:
+
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 23%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Data Issues</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Days of Week</td>
+<td>No</td>
+<td>No NAs. Column contains 7 unique values corresponding to a day of
+the week.</td>
+</tr>
+<tr class="even">
+<td>Time of Day</td>
+<td>No</td>
+<td>No NAs. Column contains 2 unique values: “AM” or “PM”</td>
+</tr>
+<tr class="odd">
+<td>Class Category</td>
+<td>No</td>
+<td>No NAs. Column contains 5 unique values” “Yoga”, “Aqua”, “Strength”,
+“HIIT”, or “Cycling”. Matches the description in the brief.</td>
+</tr>
+<tr class="even">
+<td>Class Capacity</td>
+<td>Yes</td>
+<td>No NAs. Column contains 3 unique values: 15, 25, 26. <em>Values of
+26 are erroneous and should be replaced with 25.</em></td>
+</tr>
+<tr class="odd">
+<td>Days Before</td>
+<td>No</td>
+<td>No NAs. 5 unique values ranging from 1 to 5. Consistent with
+description in case study brief.</td>
+</tr>
+<tr class="even">
+<td>Attendance</td>
+<td>No</td>
+<td>No NAs. Values range from 4 to 21.</td>
+</tr>
+<tr class="odd">
+<td>Age</td>
+<td>Yes</td>
+<td>No NAs. Values range from 8.3 to 48.8. <em>Case study brief stated
+that Age &lt; 14 are erroneous values.</em></td>
+</tr>
+<tr class="even">
+<td>Number of New Students</td>
+<td>No</td>
+<td>No NAs. Values range from 1 to 11.</td>
+</tr>
+<tr class="odd">
+<td>Number of Members Over 6 months</td>
+<td>No</td>
+<td>No NAs. Values range from 2 to 13.</td>
+</tr>
+</tbody>
+</table>
+
+The two recommended data cleaning actions in the brief are **1) Cap
+class capacity at 25** and **2) Remove rows where Age &lt; 14.**
+
+Updating the class capacity is a low impact action on our dataset.
+Removing rows, however, is a high impact action so it’s important to
+understand how many observations we are removing and whether removing
+them all together is the best course of action. An alternative to
+removing these rows would be to encode age &lt; 14 as NAs and impute the
+missing values when constructing our model.
+
+The below table shows the number of observations where Age &lt; 14. The
+frequency of this issue will help inform whether we can simply remove
+the erroneous observations or whether we need to consider alternative
+actions:
+
+    # How many observations have average age < 14?
+    df %>% filter(age < 14)
+
+    ## # A tibble: 3 × 9
+    ##   day_of_week time  class_category class…¹ days_…² atten…³   age new_s…⁴ over_…⁵
+    ##   <chr>       <chr> <chr>            <dbl>   <dbl>   <dbl> <dbl>   <dbl>   <dbl>
+    ## 1 Fri         AM    Strength            25       4      21   8.3       7      11
+    ## 2 Sat         PM    Yoga                25       1      21  13.6       6      10
+    ## 3 Thu         AM    Yoga                25       3      20  11.3       9      11
+    ## # … with abbreviated variable names ¹​class_capacity, ²​days_before, ³​attendance,
+    ## #   ⁴​new_students, ⁵​over_6_month
+
+Our dataset has 765 observations and only 3 data points have age &lt;
+14. Losing 3 rows shouldn’t affect our model so we will proceed with the
+recommendation of dropping the rows from the data frame.
+
+#### Data Cleaning & Review: Next Steps
+
+We will proceed with both recommended data cleaning actions from the
+brief:
+
+    df_clean <-
+      df %>% 
+      
+      # Recommendation #1: Cap class capacity at 25 
+      mutate(class_capacity = scales::squish(class_capacity, c(15,25))) %>%
+      
+      # Recommendation #2: Remove rows with age < 14
+      filter(age >= 14)
+
+### Data Transformations
+
+Now that we have corrected the erroneous values in our dataset, the next
+step is to prepare our data frame for model development.
+
+1.  Encode all predictor columns as either factor or numeric data
+
+2.  Derive any additional columns or transform existing columns using
+    column-wise operations
+
+Our data transformations can be categorized in two categories:
+transformations made to numeric variables and transformations made to
+character variables.
+
+#### Data Transformations - Numeric
+
+We have six numeric variables in our dataset: 1. Class Capacity 2. Days
+Before 3. Attendance 4. Age 5. Number of New Students 6. Number of New
+Students Over 6 months
+
+Our brief asks us to predict the attendance rate for each fitness class,
+thus our response variable should be attendance as a percentage of class
+capacity. We will divide all attendance-related variables (*Attendance*,
+*Number of New Students*, and *Number of Members Over 6 months*) by
+class capacity.
+
+Next we have *Age*, which ranges from 14.3 to 48.8. The histogram in our
+skimr::skim(df) plot shows that this variable appears normally
+distributed across that range. No transformations are needed.
+
+*Days Before* ranges from 1 to 5. There are two options for transforming
+this predictor: 1) leave the variable unchanged or 2) encode it as a
+factor. In the context of a linear regression, treating *Days Before* as
+a numeric variable assumes that Attendance varies linearly with Days
+Before. If encoded as a factor, a linear model would treat each *Days
+Before* option as a dummy variable, allowing each to have its own effect
+on attendance percentage.
+
+Logically, we would expect attendance rate to be at an extreme if the
+class filled up either 5 days before or 1 day before. Filling up 5 days
+before implies high demand for a class, so one could make the case that
+attendance should be high. Alteratively, one could argue that filling up
+early could lead to low attendance because class-goers might see their
+schedules change if they book out too far in advance. I can’t think of a
+case for why 3 days in advance would be the most severe attendance rate.
+As such, my expectations is that Days Before should have a monotonic, if
+not linear relationship, with attendance. We will leave *Days Before* as
+numeric.
+
+The final numeric variable is *Class Capacity*. This variable is either
+15 or 25. We will encode this variable as a factor since it has binary
+options.
+
+#### Data Transformations - Character
+
+We have three text variables in our dataset: 1. Days of Week  
+2. Time of Day 3. Class Category
+
+All text variable will be encoded as factors. This allows for the model
+to treat them as dummy variables.
+
+The additional transformation we will make is to *Days of Week* & *Time
+of Day*. Both variables represent time. Rather than have two variables
+representing when a class happened, we will combine them into a single
+Day - Time variable. The advantages of this are that we allow the dummy
+variables to more granularly capture the effects of when a class
+occured. Combining the two variables into one series is equivalent to
+creating interaction terms using the two sets of dummy variables.
+
+#### Data Transformations - Final
+
+The below table describes the final transformations we will be making to
+our dataset:
+
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Type</th>
+<th>Current Data Type</th>
+<th>New Data Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Days of Week</td>
+<td>Predictor</td>
+<td>Character</td>
+<td>Factor</td>
+<td>combine with day of week and encoded as a factor</td>
+</tr>
+<tr class="even">
+<td>Time of Day</td>
+<td>Predictor</td>
+<td>Character</td>
+<td>Factor</td>
+<td>combine with time of day and encoded as a factor</td>
+</tr>
+<tr class="odd">
+<td>Class Category</td>
+<td>Predictor</td>
+<td>Character</td>
+<td>Factor</td>
+<td>as.factor(.)</td>
+</tr>
+<tr class="even">
+<td>Class Capacity</td>
+<td>Predictor</td>
+<td>Numeric</td>
+<td>Factor</td>
+<td>as.factor(.)</td>
+</tr>
+<tr class="odd">
+<td>Days Before</td>
+<td>Predictor</td>
+<td>Numeric</td>
+<td>Numeric</td>
+<td>No change</td>
+</tr>
+<tr class="even">
+<td><strong>Attendance</strong></td>
+<td><strong>Response</strong></td>
+<td><strong>Numeric</strong></td>
+<td><strong>Percent</strong></td>
+<td><strong>divide by class capacity</strong></td>
+</tr>
+<tr class="odd">
+<td>Age</td>
+<td>Predictor</td>
+<td>Numeric</td>
+<td>Numeric</td>
+<td>No change</td>
+</tr>
+<tr class="even">
+<td>Number of New Students</td>
+<td>Predictor</td>
+<td>Numeric</td>
+<td>Percent</td>
+<td>divide by class capacity</td>
+</tr>
+<tr class="odd">
+<td>Number of Members Over 6 months</td>
+<td>Predictor</td>
+<td>Numeric</td>
+<td>Percent</td>
+<td>divide by class capacity</td>
+</tr>
+</tbody>
+</table>
 
     df_trans <-
-    df %>%
-    # First we are going to correct class capacity to remove any 26s 
-    mutate(class_capacity = scales::squish(class_capacity, c(15,25))) %>%
+    df_clean %>%
 
-    # Perform the above transformations
-    mutate(day_time = paste(day_of_week, time), 
-           class_category = as.factor(class_category),
+    # Numeric Transformations
+    # 1. Divide by Class Capacity
+    mutate(
            attendance_pct = attendance / class_capacity,
            new_student_pct = new_students / class_capacity,
-           over_6_month_pct = over_6_month / class_capacity) %>%
+           over_6_month_pct = over_6_month / class_capacity
+    ) %>%
 
-    # Remove the combined time variables
-    select(-day_of_week, -time) %>%
+    # 2. Encode Class Capacity as a Factor
+    mutate(class_capacity = as.factor(class_capacity)) %>%
 
-    # Order the days of the week
+    # Character Variable Transformations
+    # 1. Encode all as Factors & Combine Day / Time
+    mutate(class_category = as.factor(class_category),
+           day_time = paste(day_of_week, time)) %>%
+
+    # 2. Order the days of the week
     mutate(day_time = factor(day_time, levels = c("Mon AM", 
                                                   "Mon PM", 
                                                   "Tue AM",
@@ -169,86 +486,63 @@ the following variables:
                                                   "Sun AM",
                                                   "Sun PM"))) %>%
 
-    # Since capacity can only be 15 or 25, we are going to code it as a factor
-    mutate(class_capacity = as.factor(class_capacity)) 
+    # Remove the old time variables
+    select(-day_of_week, -time)
 
-Let’s look at how vacancy percent is not truly continuous. There are 18
-difference attendance options. Since attendance is divided by class
-capacity (either 15 or 25), we have a finite number of possible
-attendance percentages.
+#### Data Transformations - Addendum
 
-As I move forward to building a model, it is important to consider how
-class capacity (15 or 25) affects the relationship between our response
-and predictors variables.
+One final thing to consider is the relationship between attendance rate
+and class capacity. The attendance response variable is not truly
+continuous. In our dataset, we have 18 unique attendance values ranging
+from 4 to 21. And since we are dividing those 18 values by class
+capacity (either 15 or 25), we have a finite number of attendance
+percentages in our response variable.
+
+The below chart shows the number of rows by attendance and class
+capacity:
 
     # Count by Attendance & Capacity
-    df_trans %>%
-    count(attendance, class_capacity) %>%
-    pivot_wider(names_from = class_capacity, values_from = n, names_prefix = "capacity_") 
+    df_trans %>% 
+    ggplot(aes(x = attendance_pct, fill = class_capacity)) +
+    geom_bar(stat = "count", alpha = 0.5) +
+    theme_bw() + 
+    labs(title = "Distribution of Continuous Variables by Class Capacity")
 
-    ## # A tibble: 18 × 3
-    ##    attendance capacity_15 capacity_25
-    ##         <dbl>       <int>       <int>
-    ##  1          4          39          NA
-    ##  2          5          69          NA
-    ##  3          6          74          NA
-    ##  4          7          68           4
-    ##  5          8          66          21
-    ##  6          9          69          12
-    ##  7         10          60           8
-    ##  8         11          71          17
-    ##  9         12          55          16
-    ## 10         13          NA          12
-    ## 11         14          NA          16
-    ## 12         15          NA          14
-    ## 13         16          NA          17
-    ## 14         17          NA          10
-    ## 15         18          NA          12
-    ## 16         19          NA          13
-    ## 17         20          NA          15
-    ## 18         21          NA           7
+![](notebook_files/figure-markdown_strict/unnamed-chunk-6-1.png)
 
     # Remove non percentage variables
     df_trans <- 
     df_trans %>%
     select( -new_students, -over_6_month, -attendance)
-     
+
+As I move forward to building a model, it is important to consider how
+class capacity (15 or 25) affects the relationship between our response
+and predictors variables.
+
+The next step is to explore the relationship between our predictor and
+response variables. The below print out shows a glimpse of the
+transformed dataset, which we will use for model development:
+
     glimpse(df_trans)
 
-    ## Rows: 765
+    ## Rows: 762
     ## Columns: 8
     ## $ class_category   <fct> Yoga, Aqua, Aqua, Strength, Yoga, HIIT, Aqua, HIIT, S…
     ## $ class_capacity   <fct> 15, 15, 15, 25, 15, 15, 25, 15, 25, 15, 15, 15, 15, 1…
     ## $ days_before      <dbl> 1, 3, 5, 3, 5, 4, 2, 1, 2, 3, 2, 1, 2, 2, 2, 4, 3, 2,…
     ## $ age              <dbl> 31.1, 27.0, 22.4, 23.5, 29.8, 28.7, 32.5, 36.0, 15.3,…
-    ## $ day_time         <fct> Wed AM, Sun PM, Mon AM, Sun PM, Mon AM, Tue PM, Tue A…
     ## $ attendance_pct   <dbl> 0.5333333, 0.5333333, 0.6666667, 0.7200000, 0.6666667…
     ## $ new_student_pct  <dbl> 0.4000000, 0.4666667, 0.5333333, 0.2800000, 0.3333333…
     ## $ over_6_month_pct <dbl> 0.2666667, 0.5333333, 0.4666667, 0.3600000, 0.4666667…
-
-Our cleaned and processed data set has performed the following tasks:
-
-1.  Created a single *day\_time* variable, which we will later use as a
-    categorical predictor
-
-2.  Converted all character predictors into factors
-
-3.  Converted *Attendance* (int) into a percentage
-
-4.  Converted *New Students* (int) into a percentage
-
-5.  Converted *Over 6 Month* (int) into a percentage
-
-The next step is to explore the relationship between our predictor and
-response variables.
+    ## $ day_time         <fct> Wed AM, Sun PM, Mon AM, Sun PM, Mon AM, Tue PM, Tue A…
 
 ## Exploratory Analysis
 
-First things first, let’s look at the distribution of each continuous
-variable. As already stated, class capacity should be a pretty important
-factor in our data so we are going to split out our density plots by
-capacity. To get a sense of the sample size in each distribution, below
-is the class count by class capacity:
+First in our exploratory data analysis, we’ll look at the distribution
+of each continuous variable. As already stated, class capacity will be a
+meaningful feature in our data so we are going to split out our density
+plots by capacity. To get a sense of the sample size in each
+distribution, below is the class count by class capacity:
 
     df_trans %>%
     count(class_capacity)
@@ -257,7 +551,7 @@ is the class count by class capacity:
     ##   class_capacity     n
     ##   <fct>          <int>
     ## 1 15               571
-    ## 2 25               194
+    ## 2 25               191
 
 ### Continuous Variable Distribution
 
@@ -283,12 +577,12 @@ four continuous predictors in our data:
     facet_wrap(vars(factor), scales = "free") + 
     labs(title = "Distribution of Continuous Variables by Class Capacity")
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-5-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-9-1.png)
 
-Interestingly and frankly surprisingly, our distributions vary quite a
-bit by class capacity. It looks like the larger classes (capacity == 25)
-have younger students (age) , fill up earlier (days\_before), have fewer
-new students (new\_student\_pct), and also fewer over 6 month students
+Interestingly, our distributions vary quite a bit by class capacity. It
+looks like the larger classes (capacity == 25) have younger students
+(age) , fill up earlier (days\_before), have fewer new students
+(new\_student\_pct), and also fewer over 6 month students
 (over\_6\_month\_pct).
 
 The question to be answered next is whether the relationship between
@@ -318,7 +612,7 @@ capacity (15 or 25). We have two discrete variables in our data:
     theme(axis.text.x = element_text(angle = 90)) +
     labs(title = "Distribution of Discrete Variables")
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-6-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-10-1.png)
 
 Across class category, our data set is fairly evenly distributed. All
 class types are well represented. Further, there is little difference in
@@ -347,21 +641,37 @@ between Age and Attendance Rate change if its a Cycling class versus a
 Yoga class? This will tell us whether we can leverage interaction
 factors in our model build.
 
+    p1 <- 
+    df_trans %>%
+    pivot_longer(c(where(is.numeric), -starts_with("attendance")), names_to = "factor", values_to = "value") %>%
+    ggplot(aes(x = value, y = attendance_pct, color = class_capacity)) +
+    geom_point(alpha = 0.2) +
+    theme_bw() + 
+    geom_smooth(method = "loess") +
+    scale_y_continuous(limits = c(0, NA)) +
+    facet_wrap(vars(factor), scales = "free_x", ncol = 2) +
+    ggtitle("Attendance Rate by Continous Predictor by Class Capacity")
+
+    suppressWarnings(print(p1))
+
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-7-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
 Takeaway:
 
--   Relationship appears to be linear for all continuous variables
+-   Relationship **does** appear to be linear for all continuous
+    variables
 
--   Relationship does not vary by class capacity for *Age, Days Before,
-    New Student Percent*
+-   Relationship **does not** appear to vary by class capacity for *Age,
+    Days Before, New Student Percent*
 
--   Relationship does vary by class capacity for *Over 6 Month Percent*
+-   Relationship **does** appear to vary by class capacity for *Over 6
+    Month Percent*
 
 <!-- -->
 
+    p2 <-
     df_trans %>%
     pivot_longer(c(where(is.numeric), -starts_with("attendance")), names_to = "factor", values_to = "value") %>%
     ggplot(aes(x = value, y = attendance_pct, color = class_category)) +
@@ -372,20 +682,22 @@ Takeaway:
     facet_wrap(vars(factor), scales = "free_x", ncol = 2) +
     ggtitle("Attendance Rate by Continous Predictor by Class Category")
 
+    suppressWarnings(print(p2))
+
     ## `geom_smooth()` using formula 'y ~ x'
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-8-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-12-1.png)
 
 Takeaway:
 
--   Relationship appears to be linear for all continuous variables
+-   Relationship **does** appear to be linear for all continuous
+    variables
 
--   Relationship does not vary by class capacity for *Age, Days Before,
-    Over 6 Month Percent*
+-   Relationship **does not** vary by class capacity for *Age, Days
+    Before, Over 6 Month Percent*
 
--   Relationship between Attendance & *New Student Percent* is
-    meaningfully lower for HIIT classes versus all other class
-    categories
+-   Relationship between Attendance & *New Student Percent* **does**
+    vary for HIIT classes versus all other class categories
 
 ### Single Factor Analysis (Discrete)
 
@@ -405,7 +717,7 @@ our model development process will not change based on the results.
     ggtitle("Attendance Rate by Class Schedule") +
     theme(axis.text.x = element_text(angle = 90))
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-9-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-13-1.png)
 
     df_trans %>%
     ggplot(aes(x = class_category, y = attendance_pct)) + 
@@ -415,7 +727,7 @@ our model development process will not change based on the results.
     ggtitle("Attendance Rate by Class Category") +
     theme(axis.text.x = element_text(angle = 90))
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-9-2.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-14-1.png)
 
     df_trans %>%
     ggplot(aes(x = class_capacity, y = attendance_pct)) + 
@@ -425,7 +737,7 @@ our model development process will not change based on the results.
     ggtitle("Attendance Rate by Class Capacity") +
     theme(axis.text.x = element_text(angle = 90))
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-9-3.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-15-1.png)
 
 Takeaways:
 
@@ -438,8 +750,34 @@ Takeaways:
 
 ## Model Fitting
 
-We are going to fit two different model types to fit our dependent
-variable, *attendance\_pct*.
+Since our response variable is a real / continuous value, we look
+towards regression machine learning techniques. Many different models
+can are available to us, the simplest being linear regression. As shown
+in the EDA, our data contains many linear relationships between the
+predictor variables and the response factor, attendance rate, making a
+linear model a prime candidate model.
+
+The other model type will use to fit our data is Random Forest. Random
+Forest models, when used for regression, output the average predicted
+value from an ensemble of decision trees. Random Forest models excel in
+regression problems if there are non-linear relationships in the data
+that our simple linear regression model wouldn’t be able to capture.
+
+Again, our EDA showed linear relationships, implying that the Random
+Forest model may not perform as well as a linear model for this task.
+With that said, I am selecting Random Forest as a comparison model
+because it approaches the problem in a fundementally different manner.
+If our conclusions from EDA are correct, I would expect that we will
+proceed with the linear model. If there are non-linearity models in the
+model that were overlooked in our EDA, those non-linearities would get
+captured by the Random Forest model. Choosing two different approachs
+helps us confirm that we are correctly specifying our model.
+
+### Model Fitting - Data
+
+The below section shows the model estimation results when fitting our
+dependent variable, *attendance\_pct* using the following two model
+types:
 
 -   Linear Regression
 
@@ -454,8 +792,20 @@ hold-out subset to measure the out-of-sample performance.
     df_train <- training(df_split)
     df_test  <- testing(df_split)
 
-Before estimating each model, we will be pre-processing our data using
-the following steps:
+### Model Fitting - Feature Engineering (Linear Model)
+
+For the linear model, we will transform our underlying data to control
+for any multicollinearity and potentially non-normality of our data. We
+perform these procedures to ensure that the OLS regression assumptions
+are not violated by our data. Specifically, we want to ensure that our
+residuals are normally distributed and that the inter-variable
+correlation is at a minumum to reduce collinearity.
+
+In addition, we will encode our dummy variables and create the
+interaction terms described in the single factor analysis.
+
+Before estimating the linear model, we will be pre-processing our data
+using the following steps:
 
 1.  Box-Cox & Normalize all numeric variables
 
@@ -464,15 +814,25 @@ the following steps:
 3.  Create an interaction terms based on the trends observed in the
     single factor analysis:
 
-    1.  *class\_category\_HIIT & new\_student\_pct*
-
-    2.  *over\_6\_month\_pct & class\_capacity\_X25*
+    -   *class\_category\_HIIT & new\_student\_pct*
+    -   *over\_6\_month\_pct & class\_capacity\_X25*
 
 4.  Limit inter-variable correlation to 0.7 to reduce collinearity in
     the model
 
-Steps 1:3 will be applied to all models (Linear, Random Forest). We don’t need interaction terms in the tree-based models (RF),
-so we have a separate set of pre-processing steps for those models.
+### Model Fitting - Feature Engineering (Random Forest)
+
+Linear transformations of data (e.g. Box-Cox) have no value in Random
+Forest models. Same is true for interaction terms. If an interaction
+between two factors exists in the data, an RF model will find that
+interaction without having to feature engineer.
+
+As such, the only pre-processing steps used for the RF model is as
+follows:
+
+-   One hot encode all categorical variables
+
+<!-- -->
 
     # Set up the recipe 
     df_recipe <-
@@ -495,14 +855,11 @@ so we have a separate set of pre-processing steps for those models.
     # Random forest recipe. We are not using interaction terms in the RF model
     rf_recipe <-
       recipe(attendance_pct ~ ., data = df_train) %>%
-      # normalize the data
-      step_YeoJohnson(all_numeric_predictors()) %>% 
-      step_normalize(all_numeric_predictors()) %>% 
       # create dummy variables
       step_dummy(all_nominal_predictors()) %>% 
       prep()
 
-Once our data is pre-processed, I look at the correlation matrix to
+Once our data is pre-processed, we look at the correlation matrix to
 understand the inter-variable correlation in our train data frame:
 
     # Test our variable correlation
@@ -519,57 +876,63 @@ understand the inter-variable correlation in our train data frame:
     ## 1                            days_before             -.16            -.08
     ## 2                                    age        -.16                 -.06
     ## 3                        new_student_pct        -.08 -.06                
-    ## 4                       over_6_month_pct        -.12 -.21             .40
-    ## 5                         attendance_pct         .03 -.61             .37
-    ## 6                 class_category_Cycling        -.00  .01            -.11
+    ## 4                       over_6_month_pct        -.11 -.21             .38
+    ## 5                         attendance_pct         .04 -.61             .38
+    ## 6                 class_category_Cycling        -.01  .00            -.12
     ## 7                    class_category_HIIT         .05 -.02             .04
-    ## 8                class_category_Strength        -.05 -.02             .03
-    ## 9                    class_category_Yoga        -.02  .00             .04
-    ## 10                    class_capacity_X25         .34 -.44            -.41
-    ## 11 over_6_month_pct_x_class_capacity_X25        -.22  .15             .36
-    ## 12 new_student_pct_x_class_category_HIIT        -.06 -.01             .39
+    ## 8                class_category_Strength        -.05 -.01             .03
+    ## 9                    class_category_Yoga        -.01  .03             .04
+    ## 10                    class_capacity_X25         .32 -.44            -.40
+    ## 11 over_6_month_pct_x_class_capacity_X25        -.20  .15             .35
+    ## 12 new_student_pct_x_class_category_HIIT        -.07 -.00             .37
     ##    over_6_month_pct attendance_pct class_category_Cycling class_category_HIIT
-    ## 1              -.12            .03                   -.00                 .05
-    ## 2              -.21           -.61                    .01                -.02
-    ## 3               .40            .37                   -.11                 .04
-    ## 4                              .56                   -.07                -.01
-    ## 5               .56                                  -.08                -.02
-    ## 6              -.07           -.08                                       -.21
-    ## 7              -.01           -.02                   -.21                    
-    ## 8               .03            .04                   -.25                -.25
-    ## 9               .02            .03                   -.24                -.24
-    ## 10             -.40            .01                    .02                 .01
-    ## 11              .51            .21                   -.06                 .00
-    ## 12              .10            .08                   -.02                 .08
+    ## 1              -.11            .04                   -.01                 .05
+    ## 2              -.21           -.61                    .00                -.02
+    ## 3               .38            .38                   -.12                 .04
+    ## 4                              .56                   -.07                -.04
+    ## 5               .56                                  -.06                -.05
+    ## 6              -.07           -.06                                       -.21
+    ## 7              -.04           -.05                   -.21                    
+    ## 8               .02            .04                   -.25                -.24
+    ## 9               .06            .03                   -.24                -.23
+    ## 10             -.40            .02                    .01                 .03
+    ## 11              .51            .22                   -.06                -.01
+    ## 12              .07            .08                   -.02                 .08
     ##    class_category_Strength class_category_Yoga class_capacity_X25
-    ## 1                     -.05                -.02                .34
-    ## 2                     -.02                 .00               -.44
-    ## 3                      .03                 .04               -.41
-    ## 4                      .03                 .02               -.40
-    ## 5                      .04                 .03                .01
-    ## 6                     -.25                -.24                .02
-    ## 7                     -.25                -.24                .01
-    ## 8                                         -.28               -.01
-    ## 9                     -.28                                    .03
-    ## 10                    -.01                 .03                   
-    ## 11                     .03                -.03               -.67
+    ## 1                     -.05                -.01                .32
+    ## 2                     -.01                 .03               -.44
+    ## 3                      .03                 .04               -.40
+    ## 4                      .02                 .06               -.40
+    ## 5                      .04                 .03                .02
+    ## 6                     -.25                -.24                .01
+    ## 7                     -.24                -.23                .03
+    ## 8                                         -.28               -.02
+    ## 9                     -.28                                    .01
+    ## 10                    -.02                 .01                   
+    ## 11                     .03                -.01               -.66
     ## 12                    -.02                -.02               -.17
     ##    over_6_month_pct_x_class_capacity_X25 new_student_pct_x_class_category_HIIT
-    ## 1                                   -.22                                  -.06
-    ## 2                                    .15                                  -.01
-    ## 3                                    .36                                   .39
-    ## 4                                    .51                                   .10
-    ## 5                                    .21                                   .08
+    ## 1                                   -.20                                  -.07
+    ## 2                                    .15                                  -.00
+    ## 3                                    .35                                   .37
+    ## 4                                    .51                                   .07
+    ## 5                                    .22                                   .08
     ## 6                                   -.06                                  -.02
-    ## 7                                    .00                                   .08
+    ## 7                                   -.01                                   .08
     ## 8                                    .03                                  -.02
-    ## 9                                   -.03                                  -.02
-    ## 10                                  -.67                                  -.17
-    ## 11                                                                         .11
-    ## 12                                   .11
+    ## 9                                   -.01                                  -.02
+    ## 10                                  -.66                                  -.17
+    ## 11                                                                         .12
+    ## 12                                   .12
+
+### Model Fitting - Model Specification
 
 With our data pre-processed, we next fit the linear and random forest
-model. We are using the *tidymodels* workflow to fit both model types:
+model using the training data set. We are using the *tidymodels*
+workflow to fit both model types.
+
+The linear model uses the *lm* engine while the random forest model uses
+the *ranger* engine to fit the data.
 
     # Model Specification 
     linear_model <- linear_reg(mode = "regression", 
@@ -578,47 +941,52 @@ model. We are using the *tidymodels* workflow to fit both model types:
     rf_model <-    rand_forest(mode = "regression") %>% 
                     set_engine(engine = "ranger", importance = "impurity")
 
-    #use the knn spec to fit the pre-processed training data
+### Model Fitting - Results
+
+Once the models are specified, we apply our pre-processing steps to the
+data and estimate a model using the train dataset. This is done using
+the code below for both the linear and RF model:
+
+    # Linear Model
     linear_fit <- 
       workflow() %>% 
       add_recipe(df_recipe) %>% 
       add_model(linear_model) %>% 
       fit(data = df_train)
 
-    print(tidy(linear_fit)) 
+    tidy(linear_fit) %>% arrange((p.value))
 
     ## # A tibble: 25 × 5
-    ##    term                     estimate std.error statistic  p.value
-    ##    <chr>                       <dbl>     <dbl>     <dbl>    <dbl>
-    ##  1 (Intercept)              0.564      0.0218     25.9   3.75e-97
-    ##  2 days_before              0.000689   0.00470     0.147 8.83e- 1
-    ##  3 age                     -0.0833     0.00571   -14.6   5.76e-41
-    ##  4 new_student_pct          0.0354     0.00547     6.47  2.22e-10
-    ##  5 over_6_month_pct         0.0575     0.00587     9.81  5.09e-21
-    ##  6 class_category_Cycling  -0.0123     0.0143     -0.858 3.91e- 1
-    ##  7 class_category_HIIT     -0.0118     0.0143     -0.829 4.07e- 1
-    ##  8 class_category_Strength  0.00311    0.0134      0.231 8.17e- 1
-    ##  9 class_category_Yoga      0.00371    0.0136      0.272 7.86e- 1
-    ## 10 class_capacity_X25       0.0253     0.0173      1.46  1.44e- 1
+    ##    term                                  estimate std.error statistic   p.value
+    ##    <chr>                                    <dbl>     <dbl>     <dbl>     <dbl>
+    ##  1 (Intercept)                             0.561    0.0209      26.9  4.65e-102
+    ##  2 age                                    -0.0800   0.00561    -14.3  1.95e- 39
+    ##  3 over_6_month_pct                        0.0595   0.00570     10.4  2.02e- 23
+    ##  4 new_student_pct                         0.0380   0.00533      7.12 3.33e- 12
+    ##  5 over_6_month_pct_x_class_capacity_X25   0.0382   0.0140       2.73 6.53e-  3
+    ##  6 class_capacity_X25                      0.0422   0.0167       2.52 1.21e-  2
+    ##  7 day_time_Sun.PM                        -0.0458   0.0258      -1.78 7.63e-  2
+    ##  8 day_time_Wed.AM                        -0.0433   0.0251      -1.73 8.48e-  2
+    ##  9 day_time_Thu.PM                        -0.0340   0.0242      -1.41 1.60e-  1
+    ## 10 class_category_HIIT                    -0.0190   0.0142      -1.34 1.80e-  1
     ## # … with 15 more rows
 
+    # RF Model
     rf_fit <- 
       workflow() %>% 
       add_recipe(rf_recipe) %>% 
       add_model(rf_model) %>% 
       fit(data = df_train)
 
-    print((rf_fit))
+    rf_fit
 
     ## ══ Workflow [trained] ══════════════════════════════════════════════════════════
     ## Preprocessor: Recipe
     ## Model: rand_forest()
     ## 
     ## ── Preprocessor ────────────────────────────────────────────────────────────────
-    ## 3 Recipe Steps
+    ## 1 Recipe Step
     ## 
-    ## • step_YeoJohnson()
-    ## • step_normalize()
     ## • step_dummy()
     ## 
     ## ── Model ───────────────────────────────────────────────────────────────────────
@@ -629,16 +997,16 @@ model. We are using the *tidymodels* workflow to fit both model types:
     ## 
     ## Type:                             Regression 
     ## Number of trees:                  500 
-    ## Sample size:                      573 
+    ## Sample size:                      571 
     ## Number of independent variables:  22 
     ## Mtry:                             4 
     ## Target node size:                 5 
     ## Variable importance mode:         impurity 
     ## Splitrule:                        variance 
-    ## OOB prediction error (MSE):       0.01253405 
-    ## R squared (OOB):                  0.5307238
+    ## OOB prediction error (MSE):       0.01215087 
+    ## R squared (OOB):                  0.5425326
 
-The Random Forest in-sample R-squared is 0.53, indicating relatively low
+The Random Forest in-sample R-squared is 0.54, indicating relatively low
 model fit. This is not a surprisingly result as our Single Factor
 Analysis showed the strong linear relationship, and Random Forest models
 are non-parametric in nature.
@@ -649,9 +1017,17 @@ hold-out data to measure performance.
 ## Model Evaluation
 
 In our out-of-sample tests, we fit the test data used the trained model.
-Then we compare the predicted to actual using our testing samples.
+In the final step of our process, model evaluation, we compare the
+predicted to actual using the hold-out data in the *df\_test* data
+frame.
 
-First, let’s look at the out-of-sample fit statistics:
+### Model Evaluation - Fit Statistics
+
+The below code applies the trained models to the test data set and
+compares the fit statistics of each model. The fit statistics used for
+regression analysis are R-squared, MAE, and RMSE. The below table shows
+the R-squared, MAE and RMSE when fitting the test data set for both the
+Random Forest and linear regression model.
 
     linear_fit %>% 
       predict(df_test) %>% 
@@ -673,20 +1049,72 @@ First, let’s look at the out-of-sample fit statistics:
     ## # A tibble: 6 × 4
     ##   .metric .estimator .estimate model        
     ##   <chr>   <chr>          <dbl> <chr>        
-    ## 1 rsq     standard      0.651  linear       
-    ## 2 rsq     standard      0.575  Random Forest
-    ## 3 rmse    standard      0.0969 linear       
-    ## 4 rmse    standard      0.109  Random Forest
-    ## 5 mae     standard      0.0780 linear       
-    ## 6 mae     standard      0.0917 Random Forest
+    ## 1 rsq     standard      0.587  linear       
+    ## 2 rsq     standard      0.570  Random Forest
+    ## 3 rmse    standard      0.104  linear       
+    ## 4 rmse    standard      0.108  Random Forest
+    ## 5 mae     standard      0.0808 linear       
+    ## 6 mae     standard      0.0883 Random Forest
 
 By all three metrics (R-squared, RMSE, and MAE), the linear model
-out-performs the Random Forest.
+out-performs the Random Forest. For instance, the linear model’s
+R-squared when predicting the data set is 0.65 compared to the Random
+Forest model’s R-squared of 0.57.
 
-Visually, the in-sample and out-of-sample prediction plots are shown
-below:
+### Model Evaluation - Variable Importance
 
-     bind_rows(
+Next, we can look at variable importance to see which factors are most
+impactful for the linear model versus the Random Forest model. We use
+the *VIP* package for this visualization.
+
+For linear models, Importance is defined as the absolute value of the
+t-statistic, implying that importance is a representation of variable
+significance.
+
+For Random Forest models, importance is calculated using the following
+procedure: At each split in each tree, **the improvement in the
+split-criterion is the importance measure attributed to the splitting
+variable**, and is accumulated over all the trees in the forest
+separately for each variable.
+
+    rf_fit %>%
+      extract_fit_parsnip() %>%
+      vip::vip(geom = "col") + 
+      labs(title = "Random forest variable importance") 
+
+![](notebook_files/figure-markdown_strict/unnamed-chunk-23-1.png)
+
+    linear_fit %>%
+      extract_fit_parsnip() %>%
+      vip::vip(geom = "col") +
+        labs(title = "Linear Model variable importance") 
+
+![](notebook_files/figure-markdown_strict/unnamed-chunk-24-1.png)
+
+Comparing the two models, it’s clear that both model (linear and Random
+Forest) relies heavily on three main factors:
+
+1.  Age
+
+2.  Over 6 month percent
+
+3.  New student percent
+
+The linear model gains some additional predictive power from the class
+capacity dummy variable and that term interacted with Over 6 Month
+Students Percent.
+
+The results of the variable importance evaluations show that both models
+agree in terms of which features are most important when predicting
+attendance rate.
+
+### Model Evaluation - Predicted vs. Actual
+
+Next we compare the in-sample and out-of-sample prediction from the test
+and training data sets visually. The scatter plots comparing the RF and
+linear models across the test and train datasets are shown below:
+
+    bind_rows(
       augment(linear_fit, new_data = df_train) %>% mutate(model = "lm", train = "train"),
       augment(rf_fit, new_data = df_train) %>% mutate(model = "rf", train = "train"),
       augment(linear_fit, new_data = df_test) %>% mutate(model = "lm", train = "test"),
@@ -699,17 +1127,22 @@ below:
        theme_bw() +
       facet_wrap(~ train)
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-15-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-25-1.png)
 
 The plots show how the Random Forest model struggles to pick up the
 linear relationship in both our training and testing data sets. The
 linear model better captures the trend, leading to better visual fit and
 better fit statistics across both data sets.
 
-The linear model’s R-squared in the test data set is 0.65 compared to
-the Random Forest model’s R-squared of 0.57.
+In both the test and train dataset, the Random Forest model predictions
+have lower variance, but the RF model under-predicts both high and low
+attendance rates.
 
-### Predicted vs. Actual by Continuous Variable
+Conversely, the linear model has higher variance in its forecasts, but
+the linear model is consistent in its accuracy when attendance rate is
+both high and low.
+
+#### Model Evaluation - Predicted vs. Actual by Continuous Variable (Linear)
 
 Next we can look at how the model forecasts compare by exogenous factor.
 We start by viewing the results for the linear model:
@@ -723,17 +1156,27 @@ We start by viewing the results for the linear model:
       ggplot(aes(x = value, y = y_value, color = series)) +
       geom_point(alpha = 0.7) +
       theme_bw() +
-      ylab("Model Predicted") +
+      ylab("Attendance Pct (%)") +
       facet_wrap(~name, scales = "free_x")+
       #theme(legend.position = "none") +
       ggtitle("Linear Model", "Model Predicted Values by Continuous Variable")
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-16-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-26-1.png)
 
-Information between each x ~ y variable is captured well by the linear
-model.
+When judging performance visually, we are looking to see if the trends
+between the x ~ y variables are consistent across the model predicted
+and actual data sets.
 
-Next, we apply the same visualization for the Random Forest model:
+Attendance percent varies linearly with Age and the linear model’s
+predicted values capture trend well. The other continuous variables in
+our dataset, while noisy, also show a consistent trend across the model
+predicted and actual attendance percent.
+
+#### Model Evaluation - Predicted vs. Actual by Continuous Variable (Random Forest)
+
+Next, we apply the same visualization for the Random Forest model. As
+before, we are looking to see if the trends are consistent between the
+model predicted and actual attendance rates.
 
     rf_fit %>% 
       predict(df_test) %>% 
@@ -750,53 +1193,60 @@ Next, we apply the same visualization for the Random Forest model:
       #theme(legend.position = "none") +
       ggtitle("Random Forest Model", "Model Predicted Values by Continuous Variable")
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-17-1.png)
+![](notebook_files/figure-markdown_strict/unnamed-chunk-27-1.png)
 
-### Variable Importance
+When looking at the most important feature, Age, the Random Forest model
+does not capture the relationship between Age and attendance rate at the
+extremes as well as the linear model. There are quite a few data points
+showing that if the average age is around 20, then attendance is
+expected to be around 80%. The random forest model doesn’t do a good job
+distinguishing the difference in attendance rate if the average age is
+25 versus if the average age is 20 or younger.
 
-Finally, we can look at variable importance to see which factors are
-most impactful for the linear model versus the Random Forest model. We
-use the *VIP* package for this visualization.
+### Model Evaluation - Final
 
-For linear models, Importance is defined as the absolute value of the
-t-statistic, implying that importance is a representation of variable
-significance.
+In model evaluation we judged the models on three separate criteria:
 
-For Random Forest models, importance is calculated using the following
-procedure: At each split in each tree, **the improvement in the
-split-criterion is the importance measure attributed to the splitting
-variable**, and is accumulated over all the trees in the forest
-separately for each variable.
+1.  Fit statistics when predicting using the test dataset
+2.  Variable importance
+3.  Visual assessment of predicted vs. actual scatter plots on both the
+    test and train datasets
 
-    rf_fit %>%
-      extract_fit_parsnip() %>%
-      vip(geom = "col") + 
-      labs(title = "Random forest variable importance") 
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 36%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Criteria</th>
+<th>Random Forest</th>
+<th>Linear Model</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Test Fit Statistics</strong></td>
+<td>RMSE = 0.1084</td>
+<td>RMSE = 0.1042</td>
+</tr>
+<tr class="even">
+<td><strong>Variable Importance</strong></td>
+<td>Most Important Factors: Age Over 6 month percent New student
+percent</td>
+<td>Most Important Factors: Age Over 6 month percent New student
+percent</td>
+</tr>
+<tr class="odd">
+<td><strong>Predicted vs. Actual Scatter Plot</strong></td>
+<td>Lower variance in model predictions, but model under-predicts both
+high and low attendance rates</td>
+<td>Higher variance in model predictions, but model performs
+consistently when attendance rate is high and low</td>
+</tr>
+</tbody>
+</table>
 
-![](notebook_files/figure-markdown_strict/unnamed-chunk-18-1.png)
-
-Comparing the two models, it’s clear that the Random Forest model relies
-heavily on three main factors:
-
-1.  Age
-
-2.  Over 6 month percent
-
-3.  New student percent
-
-All other factors have little importance in the Random Forest model.
-
-For comparison, the linear importance plot is shown below:
-
-    linear_fit %>%
-      extract_fit_parsnip() %>%
-      vip::vip(geom = "col") +
-        labs(title = "Linear Model variable importance") 
-
-![](notebook_files/figure-markdown_strict/unnamed-chunk-19-1.png)
-
-## Conclusion
-
-In fitting a Random Forest model and a linear model to predict
-attendance rates, the linear model performs the best in capturing the
-trends in our predictor data.
+The linear model performed better in all accounts and is best suited for
+modeling the class attendance.
